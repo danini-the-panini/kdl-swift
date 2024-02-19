@@ -1,2 +1,5 @@
-// The Swift Programming Language
-// https://docs.swift.org/swift-book
+public struct KDL {
+    public static func parseDocument(_ string: String) -> KDLDocument {
+        return KDLDocument()
+    }
+}
