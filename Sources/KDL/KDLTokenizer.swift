@@ -53,7 +53,7 @@ let SYMBOLS: [Character : KDLToken] = [
     ";": KDLToken.SEMICOLON,
 ]
 
-let WHITESPACE: [Character] = [
+public let WHITESPACE: [Character] = [
     "\u{0009}", "\u{000B}", "\u{0020}", "\u{00A0}",
     "\u{1680}", "\u{2000}", "\u{2001}", "\u{2002}",
     "\u{2003}", "\u{2004}", "\u{2005}", "\u{2006}",
@@ -61,7 +61,7 @@ let WHITESPACE: [Character] = [
     "\u{202F}", "\u{205F}", "\u{3000}" 
 ]
 
-let NEWLINES: [Character] = ["\u{000A}", "\u{0085}", "\u{000C}", "\u{2028}", "\u{2029}"]
+let NEWLINES: [Character] = ["\u{000A}", "\u{0085}", "\u{000C}", "\u{2028}", "\u{2029}", "\r\n", "\r"]
 
 let DIGITS: [Character] = (0...9).map { let s = "\($0)"; return s[s.startIndex] }
 
@@ -106,6 +106,7 @@ public class KDLTokenizer {
         case invalidOctal(String)
         case invalidBinary(String)
         case unexpectedEscape(String)
+        case invalidUnicodeEscape(String)
         case invalidCodePoint(Int)
         case invalidMultilineFinalLine
         case invalidMultilineIndentation
@@ -240,7 +241,7 @@ public class KDLTokenizer {
                         self.index += 1
                     case "0"..."9", "+":
                         let n = try char(index + 1)
-                        if c == "0" && n != nil && ["b", "o", "c"].contains(n) {
+                        if c == "0" && n != nil && ["b", "o", "x"].contains(n) {
                             self.index += 2
                             self.buffer = ""
                             switch n {
@@ -276,12 +277,6 @@ public class KDLTokenizer {
                     case _ where SYMBOLS[c!] != nil: ()
                         self.index += 1
                         return SYMBOLS[c!]!
-                    case "\r":
-                        switch try char(index + 1) {
-                        case "\n": self.index += 2
-                        default: self.index += 1
-                        }
-                        return .NEWLINE
                     case _ where NEWLINES.contains(c!):
                         self.index += 1
                         return .NEWLINE
@@ -289,7 +284,7 @@ public class KDLTokenizer {
                         switch try char(index + 1) {
                         case "/":
                             if inType || lastToken == .RPAREN {
-                               throw TokenizationError.unexpectedCharacter(c!)
+                                throw TokenizationError.unexpectedCharacter(c!)
                             }
                             self.context = .singleLineComment
                             self.index += 2
@@ -360,7 +355,7 @@ public class KDLTokenizer {
                             self.index += 2
                         case "\"":
                             self.index += 1
-                            var string = try _convertEscapes(buffer)
+                            var string = try KDLStringTokenizer(buffer).process()
                             string = self.context == .multiLineString ? try _unindent(string) : string
                             return .STRING(string)
                         case nil:
@@ -410,7 +405,7 @@ public class KDLTokenizer {
                         if try c != nil && String(c!).contains(Regex("[0-7_]")) {
                             self.index += 1
                             self.buffer += String(c!)
-                        } else if WHITESPACE.contains(c!) || NEWLINES.contains(c!) || c == nil {
+                        } else if c == nil || WHITESPACE.contains(c!) || NEWLINES.contains(c!) {
                             return try _parseOctal(buffer)
                         } else {
                             throw TokenizationError.unexpectedCharacter(c!)
@@ -419,7 +414,7 @@ public class KDLTokenizer {
                         if try c != nil && String(c!).contains(Regex("[01_]")) {
                             self.index += 1
                             self.buffer += String(c!)
-                        } else if WHITESPACE.contains(c!) || NEWLINES.contains(c!) || c == nil {
+                        } else if c == nil || WHITESPACE.contains(c!) || NEWLINES.contains(c!) {
                             return try _parseBinary(buffer)
                         } else {
                             throw TokenizationError.unexpectedCharacter(c!)
@@ -557,36 +552,6 @@ public class KDLTokenizer {
 
     func _munchUnderscores(_ s: String) -> String {
         return s.replacing("_", with: "")
-    }
-
-    func _convertEscapes(_ string: String) throws -> String {
-        var s = string
-            .replacing(#"\n"#, with: "\n")
-            .replacing(#"\r"#, with: "\r")
-            .replacing(#"\t"#, with: "\t")
-            .replacing(#"\\"#, with: "\\")
-            .replacing(#"\""#, with: "\"")
-            .replacing(#"\b"#, with: "\u{0008}")
-            .replacing(#"\f"#, with: "\u{000C}")
-            .replacing("\\\n", with: "")
-            .replacing(#"\s"#, with: " ")
-            .replacing(try Regex(#"\\\s+"#), with: "")
-
-        if let m = try Regex(#"\\(\s+|[^u])"#).firstMatch(in: s) {
-            throw TokenizationError.unexpectedEscape(String(m.0))
-        }
-
-        while let m = try Regex(#"\\u\{([0-9a-fA-F]{0,6})\}"#).firstMatch(in: s) {
-
-            let g = m[1]
-            let i = Int(String(g.substring!), radix: 16)!
-            if i < 0 || i > 0x10FFFF {
-                throw TokenizationError.invalidCodePoint(i)
-            }
-            s.replaceSubrange(m.range, with: String(Character(UnicodeScalar(i)!)))
-        }
-
-        return s
     }
 
     func _unindent(_ string: String) throws -> String {
