@@ -53,7 +53,7 @@ let SYMBOLS: [Character : KDLToken] = [
     ";": KDLToken.SEMICOLON,
 ]
 
-public let WHITESPACE: [Character] = [
+let WHITESPACE: [Character] = [
     "\u{0009}", "\u{000B}", "\u{0020}", "\u{00A0}",
     "\u{1680}", "\u{2000}", "\u{2001}", "\u{2002}",
     "\u{2003}", "\u{2004}", "\u{2005}", "\u{2006}",
@@ -72,7 +72,7 @@ let NON_IDENTIFIER_CHARS: [Character?] =
         NEWLINES,
         EQUALS,
         Array(SYMBOLS.keys),
-        ["\r", "\\", "[", "]", "(", ")", "\"", "/", "#"],
+        ["\\", "[", "]", "(", ")", "\"", "/", "#"],
         charRange(from: 0x0000, to: 0x0020)
     )
 let NON_INITIAL_IDENTIFIER_CHARS: [Character?] = concat(
