@@ -129,7 +129,6 @@ public class KDLTokenizer {
     var lastToken: KDLToken? = nil
 
     init(_ s: String, start: Int = 0) {
-        print("init tokenizer: \(s)[\(start)]")
         self.str = s
         self.index = start
         self.start = start
@@ -178,7 +177,6 @@ public class KDLTokenizer {
         self.previousContext = nil
         while true {
             let c = try char(index)
-            print("next char: \(c == nil ? "null" : String(c!))")
             if context == nil {
                 if c == nil {
                     if done {
@@ -232,7 +230,6 @@ public class KDLTokenizer {
                         self.buffer = String(c!)
                         self.index += 1
                     case "-":
-                        print("neg")
                         let n = try char(index + 1)
                         if n != nil && DIGITS.contains(n!) {
                             self.context = .decimal
@@ -289,17 +286,19 @@ public class KDLTokenizer {
                         self.index += 1
                         return .NEWLINE
                     case "/":
-                        self.index += 2
                         switch try char(index + 1) {
                         case "/":
                             if inType || lastToken == .RPAREN {
                                throw TokenizationError.unexpectedCharacter(c!)
                             }
                             self.context = .singleLineComment
+                            self.index += 2
                         case "*":
                             self.context = .multiLineComment
                             self.commentNesting = 1
+                            self.index += 2
                         case "-":
+                            self.index += 2
                             return .SLASHDASH
                         default: throw TokenizationError.unexpectedCharacter(c!)
                         }
@@ -308,7 +307,7 @@ public class KDLTokenizer {
                         self.index += 1
                     case _ where !NON_INITIAL_IDENTIFIER_CHARS.contains(c):
                         self.context = .ident
-                        self.buffer += String(c!)
+                        self.buffer = String(c!)
                         self.index += 1
                     case "(":
                         self.inType = true
@@ -385,15 +384,15 @@ public class KDLTokenizer {
                                 let string = self.context == .multiLineRawstring ? try _unindent(buffer) : buffer
                                 return .RAWSTRING(string)
                             }
-
-                            self.buffer += String(c!)
-                            self.index += 1
                         }
+
+                        self.buffer += String(c!)
+                        self.index += 1
                     case .some(.decimal):
                         if try c != nil && String(c!).contains(Regex("[0-9.\\-+_eE]")) {
                             self.index += 1
                             self.buffer += String(c!)
-                        } else if WHITESPACE.contains(c!) || NEWLINES.contains(c!) || c == nil {
+                        } else if c == nil || WHITESPACE.contains(c!) || NEWLINES.contains(c!) {
                             return try _parseDecimal(buffer)
                         } else {
                             throw TokenizationError.unexpectedCharacter(c!)
@@ -402,7 +401,7 @@ public class KDLTokenizer {
                         if try c != nil && String(c!).contains(Regex("[0-9a-fA-F_]")) {
                             self.index += 1
                             self.buffer += String(c!)
-                        } else if WHITESPACE.contains(c!) || NEWLINES.contains(c!) || c == nil {
+                        } else if c == nil || WHITESPACE.contains(c!) || NEWLINES.contains(c!) {
                             return try _parseHexadecimal(buffer)
                         } else {
                             throw TokenizationError.unexpectedCharacter(c!)
@@ -487,7 +486,7 @@ public class KDLTokenizer {
     }
 
     func char(_ i: Int) throws -> Character? {
-        if i < 0 || i > str.count {
+        if i < 0 || i >= str.count {
             return nil
         }
         let c = str[str.index(str.startIndex, offsetBy: i)]
@@ -578,12 +577,13 @@ public class KDLTokenizer {
         }
 
         while let m = try Regex(#"\\u\{([0-9a-fA-F]{0,6})\}"#).firstMatch(in: s) {
+
             let g = m[1]
             let i = Int(String(g.substring!), radix: 16)!
             if i < 0 || i > 0x10FFFF {
                 throw TokenizationError.invalidCodePoint(i)
             }
-            s.replaceSubrange(g.range!, with: String(Character(UnicodeScalar(i)!)))
+            s.replaceSubrange(m.range, with: String(Character(UnicodeScalar(i)!)))
         }
 
         return s
