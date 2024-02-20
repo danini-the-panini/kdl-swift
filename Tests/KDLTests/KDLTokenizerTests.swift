@@ -7,6 +7,15 @@ final class KDLTokenizerTests: XCTestCase {
         XCTAssertEqual(try tokenizer.peekToken(), .IDENT("node"))
         XCTAssertEqual(try tokenizer.peekTokenAfterNext(), .WS)
     }
+
+    func testIdentifier() throws {
+        print("test foo")
+        XCTAssertEqual(try KDLTokenizer("foo").nextToken(), .IDENT("foo"))
+        print("test foo bar")
+        XCTAssertEqual(try KDLTokenizer("foo-bar123").nextToken(), .IDENT("foo-bar123"))
+        print("test dash")
+        XCTAssertEqual(try KDLTokenizer("-").nextToken(), .IDENT("-"))
+        print("test double dash")
+        XCTAssertEqual(try KDLTokenizer("--").nextToken(), .IDENT("--"))
+    }
 }
-
-

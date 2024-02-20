@@ -129,6 +129,7 @@ public class KDLTokenizer {
     var lastToken: KDLToken? = nil
 
     init(_ s: String, start: Int = 0) {
+        print("init tokenizer: \(s)[\(start)]")
         self.str = s
         self.index = start
         self.start = start
@@ -177,6 +178,7 @@ public class KDLTokenizer {
         self.previousContext = nil
         while true {
             let c = try char(index)
+            print("next char: \(c == nil ? "null" : String(c!))")
             if context == nil {
                 if c == nil {
                     if done {
@@ -230,6 +232,7 @@ public class KDLTokenizer {
                         self.buffer = String(c!)
                         self.index += 1
                     case "-":
+                        print("neg")
                         let n = try char(index + 1)
                         if n != nil && DIGITS.contains(n!) {
                             self.context = .decimal
@@ -303,7 +306,10 @@ public class KDLTokenizer {
                     case _ where WHITESPACE.contains(c!):
                         self.context = .whitespace
                         self.index += 1
-                    case _ where !NON_INITIAL_IDENTIFIER_CHARS.contains(c): ()
+                    case _ where !NON_INITIAL_IDENTIFIER_CHARS.contains(c):
+                        self.context = .ident
+                        self.buffer += String(c!)
+                        self.index += 1
                     case "(":
                         self.inType = true
                         self.index += 1
