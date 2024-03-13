@@ -1,7 +1,10 @@
+import Foundation
+
 enum KDLValue: Equatable, CustomStringConvertible {
     case string(String, String? = nil)
     case int(Int, String? = nil)
     case float(Float, String? = nil)
+    case decimal(Decimal, String? = nil)
     case bool(Bool, String? = nil)
     case null(String? = nil)
 
@@ -10,6 +13,7 @@ enum KDLValue: Equatable, CustomStringConvertible {
         case .string(let s, _): return .string(s, type)
         case .int(let i, _): return .int(i, type)
         case .float(let f, _): return .float(f, type)
+        case .decimal(let d, _): return .decimal(d, type)
         case .bool(let b, _): return .bool(b, type)
         case .null(_): return .null(type)
         }
@@ -17,7 +21,7 @@ enum KDLValue: Equatable, CustomStringConvertible {
 
     public var description: String {
         switch self {
-        case .string(_, let t), .int(_, let t), .float(_, let t), .bool(_, let t), .null(let t):
+        case .string(_, let t), .int(_, let t), .float(_, let t), .decimal(_, let t), .bool(_, let t), .null(let t):
             switch t {
                 case .none: return valueAsString()
                 case .some(let t): return "(\(StringDumper(t).dump()))\(valueAsString())"
@@ -34,6 +38,7 @@ enum KDLValue: Equatable, CustomStringConvertible {
             if f == Float.infinity { return "#inf" }
             if f == -Float.infinity { return "#-inf" }
             return "\(f)"
+        case .decimal(let d, _): return "\(d)"
         case .bool(let b, _): return b ? "#true" : "#false"
         case .null(_): return "#null"
         }

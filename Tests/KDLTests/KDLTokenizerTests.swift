@@ -43,7 +43,7 @@ final class KDLTokenizerTests: XCTestCase {
     }
 
     func testFloat() throws {
-        XCTAssertEqual(try KDLTokenizer("1.23").nextToken(), .FLOAT(1.23))
+        XCTAssertEqual(try KDLTokenizer("1.23").nextToken(), .DECIMAL(1.23))
         XCTAssertEqual(try KDLTokenizer("#inf").nextToken(), .FLOAT(Float.infinity))
         XCTAssertEqual(try KDLTokenizer("#-inf").nextToken(), .FLOAT(-Float.infinity))
         let nan = try KDLTokenizer("#nan").nextToken()

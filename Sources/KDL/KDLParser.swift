@@ -200,6 +200,7 @@ public class KDLParser {
             return .string(s)
         case .INTEGER(let i): return .int(i)
         case .FLOAT(let f): return .float(f)
+        case .DECIMAL(let d): return .decimal(d)
         case .TRUE: return .bool(true)
         case .FALSE: return .bool(false)
         case .NULL: return .null()

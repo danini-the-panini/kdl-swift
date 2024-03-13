@@ -1,3 +1,4 @@
+import Foundation
 import XCTest
 @testable import KDL
 
@@ -89,14 +90,14 @@ final class KDLParserTests: XCTestCase {
     }
 
     func testFloat() throws {
-        XCTAssertEqual(try parser.parse("node 1.0"), KDLDocument([KDLNode("node", arguments: [.float(1.0)])]))
-        XCTAssertEqual(try parser.parse("node 0.0"), KDLDocument([KDLNode("node", arguments: [.float(0.0)])]))
-        XCTAssertEqual(try parser.parse("node -1.0"), KDLDocument([KDLNode("node", arguments: [.float(-1.0)])]))
-        XCTAssertEqual(try parser.parse("node +1.0"), KDLDocument([KDLNode("node", arguments: [.float(1.0)])]))
-        XCTAssertEqual(try parser.parse("node 1.0e10"), KDLDocument([KDLNode("node", arguments: [.float(1.0e10)])]))
-        XCTAssertEqual(try parser.parse("node 1.0e-10"), KDLDocument([KDLNode("node", arguments: [.float(1.0e-10)])]))
-        XCTAssertEqual(try parser.parse("node 123_456_789.0"), KDLDocument([KDLNode("node", arguments: [.float(123456789.0)])]))
-        XCTAssertEqual(try parser.parse("node 123_456_789.0_"), KDLDocument([KDLNode("node", arguments: [.float(123456789.0)])]))
+        XCTAssertEqual(try parser.parse("node 1.0"), KDLDocument([KDLNode("node", arguments: [.decimal(1.0)])]))
+        XCTAssertEqual(try parser.parse("node 0.0"), KDLDocument([KDLNode("node", arguments: [.decimal(0.0)])]))
+        XCTAssertEqual(try parser.parse("node -1.0"), KDLDocument([KDLNode("node", arguments: [.decimal(-1.0)])]))
+        XCTAssertEqual(try parser.parse("node +1.0"), KDLDocument([KDLNode("node", arguments: [.decimal(1.0)])]))
+        XCTAssertEqual(try parser.parse("node 1.0e10"), KDLDocument([KDLNode("node", arguments: [.decimal(1.0e10)])]))
+        XCTAssertEqual(try parser.parse("node 1.0e-10"), KDLDocument([KDLNode("node", arguments: [.decimal(1.0e-10)])]))
+        XCTAssertEqual(try parser.parse("node 123_456_789.0"), KDLDocument([KDLNode("node", arguments: [.decimal(123456789.0)])]))
+        XCTAssertEqual(try parser.parse("node 123_456_789.0_"), KDLDocument([KDLNode("node", arguments: [.decimal(123456789.0)])]))
         XCTAssertThrowsError(try parser.parse("node 1._0"))
         XCTAssertThrowsError(try parser.parse("node 1."))
         XCTAssertThrowsError(try parser.parse("node 1.0v2"))
@@ -322,7 +323,7 @@ final class KDLParserTests: XCTestCase {
         bignum 1_000_000
         """)
         let nodes = KDLDocument([
-            KDLNode("num", arguments: [.float(1.234e-42)]),
+            KDLNode("num", arguments: [.decimal(Decimal(string: "1.234e-42")!)]),
             KDLNode("my-hex", arguments: [.int(0xdeadbeef)]),
             KDLNode("my-octal", arguments: [.int(493)]),
             KDLNode("my-binary", arguments: [.int(173)]),

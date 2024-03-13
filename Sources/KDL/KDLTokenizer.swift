@@ -1,3 +1,5 @@
+import Foundation
+
 public enum KDLTokenizerContext {
     case ident
     case keyword
@@ -21,6 +23,7 @@ public enum KDLToken: Equatable {
     case RAWSTRING(String)
     case INTEGER(Int)
     case FLOAT(Float)
+    case DECIMAL(Decimal)
     case TRUE
     case FALSE
     case NULL
@@ -498,8 +501,8 @@ public class KDLTokenizer {
 
     func _parseDecimal(_ s: String) throws -> KDLToken {
         if s.contains(try Regex("[.eE]")) {
-            if try _checkFloat(s), let f = Float(_munchUnderscores(s)) {
-                return .FLOAT(f)
+            if try _checkFloat(s), let d = Decimal(string: _munchUnderscores(s)) {
+                return .DECIMAL(d)
             }
         }
         if try _checkInt(s), let i = Int(_munchUnderscores(s)) {
