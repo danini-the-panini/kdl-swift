@@ -40,6 +40,15 @@ final class KDLTokenizerTests: XCTestCase {
 
     func testInteger() throws {
         XCTAssertEqual(try KDLTokenizer("123").nextToken(), .INTEGER(123))
+        XCTAssertEqual(try KDLTokenizer("0x0123456789abcdef").nextToken(), .INTEGER(0x0123456789abcdef))
+        XCTAssertEqual(try KDLTokenizer("0o01234567").nextToken(), .INTEGER(0o01234567))
+        XCTAssertEqual(try KDLTokenizer("0b101001").nextToken(), .INTEGER(0b101001))
+        XCTAssertEqual(try KDLTokenizer("-0x0123456789abcdef").nextToken(), .INTEGER(-0x0123456789abcdef))
+        XCTAssertEqual(try KDLTokenizer("-0o01234567").nextToken(), .INTEGER(-0o01234567))
+        XCTAssertEqual(try KDLTokenizer("-0b101001").nextToken(), .INTEGER(-0b101001))
+        XCTAssertEqual(try KDLTokenizer("+0x0123456789abcdef").nextToken(), .INTEGER(0x0123456789abcdef))
+        XCTAssertEqual(try KDLTokenizer("+0o01234567").nextToken(), .INTEGER(0o01234567))
+        XCTAssertEqual(try KDLTokenizer("+0b101001").nextToken(), .INTEGER(0b101001))
     }
 
     func testFloat() throws {

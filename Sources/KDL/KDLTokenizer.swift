@@ -235,24 +235,31 @@ public class KDLTokenizer {
                         self.index += 1
                     case "-":
                         let n = try char(index + 1)
+                        let n2 = try char(index + 2)
                         if n != nil && DIGITS.contains(n!) {
-                            self.context = .decimal
+                            if n == "0" && n2 != nil && ["b", "o", "x"].contains(n2) {
+                                self.index += 3
+                                self.context = try _integerContext(n2!)
+                            } else {
+                                self.index += 1
+                                self.context = .decimal
+                            }
                         } else {
+                            self.index += 1
                             self.context = .ident
                         }
                         self.buffer = String(c!)
-                        self.index += 1
                     case "0"..."9", "+":
                         let n = try char(index + 1)
+                        let n2 = try char(index + 2)
                         if c == "0" && n != nil && ["b", "o", "x"].contains(n) {
                             self.index += 2
                             self.buffer = ""
-                            switch n {
-                            case "b": self.context = .binary
-                            case "o": self.context = .octal
-                            case "x": self.context = .hexadecimal
-                            default: ()
-                            }
+                            self.context = try _integerContext(n!)
+                        } else if c == "+" && n == "0" && n2 != nil && ["b", "o", "x"].contains(n2) {
+                            self.index += 3
+                            self.buffer = String(c!)
+                            self.context = try _integerContext(n2!)
                         } else {
                             self.context = .decimal
                             self.index += 1
@@ -499,6 +506,15 @@ public class KDLTokenizer {
         self.previousContext = nil
     }
 
+    func _integerContext(_ n: Character) throws -> KDLTokenizerContext {
+        switch n {
+            case "b": return .binary
+            case "o": return .octal
+            case "x": return .hexadecimal
+            default: throw TokenizationError.unexpectedCharacter(n)
+        }
+    }
+
     func _parseDecimal(_ s: String) throws -> KDLToken {
         if s.contains(try Regex("[.eE]")) {
             if try _checkFloat(s), let d = Decimal(string: _munchUnderscores(s)) {
@@ -524,7 +540,7 @@ public class KDLTokenizer {
     }
 
     func _parseHexadecimal(_ s: String) throws -> KDLToken {
-        if try !s.contains(Regex(#"^[0-9a-fA-F][0-9a-fA-F_]*$"#)) {
+        if try !s.contains(Regex(#"^[+-]?[0-9a-fA-F][0-9a-fA-F_]*$"#)) {
             throw TokenizationError.invalidHexadecimal(s)
         }
         if let i = Int(_munchUnderscores(s), radix: 16) {
@@ -534,7 +550,7 @@ public class KDLTokenizer {
     }
 
     func _parseOctal(_ s: String) throws -> KDLToken {
-        if try !s.contains(Regex(#"^[0-7][0-7_]*$"#)) {
+        if try !s.contains(Regex(#"^[+-]?[0-7][0-7_]*$"#)) {
             throw TokenizationError.invalidOctal(s)
         }
         if let i = Int(_munchUnderscores(s), radix: 8) {
@@ -544,7 +560,7 @@ public class KDLTokenizer {
     }
 
     func _parseBinary(_ s: String) throws -> KDLToken {
-        if try !s.contains(Regex(#"^[01][01_]*$"#)) {
+        if try !s.contains(Regex(#"^[+-]?[01][01_]*$"#)) {
             throw TokenizationError.invalidBinary(s)
         }
         if let i = Int(_munchUnderscores(s), radix: 2) {
