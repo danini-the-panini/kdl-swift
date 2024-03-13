@@ -22,7 +22,6 @@ public class KDLStringTokenizer {
                     case .some("\""): buffer += "\""; i += 1
                     case .some("b"): buffer += "\u{08}"; i += 1
                     case .some("f"): buffer += "\u{0C}"; i += 1
-                    case .some("\n"): buffer += ""; i += 1
                     case .some("s"): buffer += " "; i += 1
                     case .some("u"):
                         switch char(i+2) {
@@ -40,7 +39,7 @@ public class KDLStringTokenizer {
                                     if code < 0 || code > 0x10FFFF {
                                         throw KDLTokenizer.TokenizationError.invalidCodePoint(code)
                                     }
-                                    i = j+1
+                                    i = j
                                     if let s = UnicodeScalar(code) {
                                         buffer += String(Character(s))
                                     }
@@ -50,12 +49,12 @@ public class KDLStringTokenizer {
                             default: throw KDLTokenizer.TokenizationError.invalidUnicodeEscape("")
                         }
                     case .some(let c):
-                        if WHITESPACE.contains(c) {
+                        if WHITESPACE.contains(c) || NEWLINES.contains(c) {
                             var j = i+2
-                            while let c = char(j), WHITESPACE.contains(c) {
+                            while let c = char(j), WHITESPACE.contains(c) || NEWLINES.contains(c) {
                                 j += 1
                             }
-                            i = j
+                            i = j-1
                         } else {
                             throw KDLTokenizer.TokenizationError.unexpectedEscape("\\\(c)")
                         }

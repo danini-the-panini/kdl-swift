@@ -1,4 +1,6 @@
 import Foundation
+import BigDecimal
+import BigInt
 
 public enum KDLTokenizerContext {
     case ident
@@ -22,8 +24,9 @@ public enum KDLToken: Equatable {
     case STRING(String)
     case RAWSTRING(String)
     case INTEGER(Int)
+    case BIGINT(BInt)
     case FLOAT(Float)
-    case DECIMAL(Decimal)
+    case DECIMAL(BigDecimal)
     case TRUE
     case FALSE
     case NULL
@@ -134,6 +137,9 @@ public class KDLTokenizer {
 
     init(_ s: String, start: Int = 0) {
         self.str = s
+        if str.starts(with: "\u{FEFF}") {
+            str.remove(at: str.startIndex)
+        }
         self.index = start
         self.start = start
     }
@@ -233,7 +239,7 @@ public class KDLTokenizer {
                         self.context = .keyword
                         self.buffer = String(c!)
                         self.index += 1
-                    case "-":
+                    case "-", "+":
                         let n = try char(index + 1)
                         let n2 = try char(index + 2)
                         if n != nil && DIGITS.contains(n!) {
@@ -249,17 +255,12 @@ public class KDLTokenizer {
                             self.context = .ident
                         }
                         self.buffer = String(c!)
-                    case "0"..."9", "+":
+                    case "0"..."9":
                         let n = try char(index + 1)
-                        let n2 = try char(index + 2)
                         if c == "0" && n != nil && ["b", "o", "x"].contains(n) {
                             self.index += 2
                             self.buffer = ""
                             self.context = try _integerContext(n!)
-                        } else if c == "+" && n == "0" && n2 != nil && ["b", "o", "x"].contains(n2) {
-                            self.index += 3
-                            self.buffer = String(c!)
-                            self.context = try _integerContext(n2!)
                         } else {
                             self.context = .decimal
                             self.index += 1
@@ -365,8 +366,8 @@ public class KDLTokenizer {
                             self.index += 2
                         case "\"":
                             self.index += 1
-                            var string = try KDLStringTokenizer(buffer).process()
-                            string = self.context == .multiLineString ? try _unindent(string) : string
+                            var string = self.context == .multiLineString ? try _unindent(buffer) : buffer
+                            string = try KDLStringTokenizer(string).process()
                             return .STRING(string)
                         case nil:
                             throw TokenizationError.unterminatedString
@@ -517,12 +518,18 @@ public class KDLTokenizer {
 
     func _parseDecimal(_ s: String) throws -> KDLToken {
         if s.contains(try Regex("[.eE]")) {
-            if try _checkFloat(s), let d = Decimal(string: _munchUnderscores(s)) {
-                return .DECIMAL(d)
+            if try _checkFloat(s) {
+                return .DECIMAL(BigDecimal(_munchUnderscores(s)))
             }
         }
-        if try _checkInt(s), let i = Int(_munchUnderscores(s)) {
-            return .INTEGER(i)
+        if try _checkInt(s) {
+            let s = _munchUnderscores(s)
+            if let i = Int(s) {
+                return .INTEGER(i)
+            }
+            if let i = BInt(s) {
+                return .BIGINT(i)
+            }
         }
         if NON_INITIAL_IDENTIFIER_CHARS.contains(s.first) ||
             s[s.index(s.startIndex, offsetBy: 1)...].allSatisfy({ c in NON_IDENTIFIER_CHARS.contains(c) }) {
@@ -543,8 +550,12 @@ public class KDLTokenizer {
         if try !s.contains(Regex(#"^[+-]?[0-9a-fA-F][0-9a-fA-F_]*$"#)) {
             throw TokenizationError.invalidHexadecimal(s)
         }
-        if let i = Int(_munchUnderscores(s), radix: 16) {
+        let s = _munchUnderscores(s)
+        if let i = Int(s, radix: 16) {
             return .INTEGER(i)
+        }
+        if let i = BInt(s, radix: 16) {
+            return .BIGINT(i)
         }
         throw TokenizationError.invalidHexadecimal(s)
     }
@@ -553,8 +564,12 @@ public class KDLTokenizer {
         if try !s.contains(Regex(#"^[+-]?[0-7][0-7_]*$"#)) {
             throw TokenizationError.invalidOctal(s)
         }
-        if let i = Int(_munchUnderscores(s), radix: 8) {
+        let s = _munchUnderscores(s)
+        if let i = Int(s, radix: 8) {
             return .INTEGER(i)
+        }
+        if let i = BInt(s, radix: 8) {
+            return .BIGINT(i)
         }
         throw TokenizationError.invalidOctal(s)
     }
@@ -563,8 +578,12 @@ public class KDLTokenizer {
         if try !s.contains(Regex(#"^[+-]?[01][01_]*$"#)) {
             throw TokenizationError.invalidBinary(s)
         }
-        if let i = Int(_munchUnderscores(s), radix: 2) {
+        let s = _munchUnderscores(s)
+        if let i = Int(s, radix: 2) {
             return .INTEGER(i)
+        }
+        if let i = BInt(s, radix: 2) {
+            return .BIGINT(i)
         }
         throw TokenizationError.invalidBinary(s)
     }
@@ -574,7 +593,7 @@ public class KDLTokenizer {
     }
 
     func _unindent(_ string: String) throws -> String {
-        var lines = string.split(separator: "\n")
+        var lines = string.split(separator: "\n", omittingEmptySubsequences: false)
         let indent = lines.last
         lines = lines.dropLast()
 

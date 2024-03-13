@@ -116,7 +116,7 @@ public class KDLParser {
                 case .EQUALS:
                     let p = try _prop()
                     if !commented {
-                        node.properties[p.0] = p.1
+                        node[p.0] = p.1
                     }
                 default:
                     let v = try _value()
@@ -124,6 +124,7 @@ public class KDLParser {
                         node.arguments.append(v)
                     }
                 }
+                commented = false
             case .LBRACE:
                 self.depth += 1
                 let children = try _children()
@@ -148,7 +149,7 @@ public class KDLParser {
                 case .EQUALS:
                     let p = try _prop()
                     if !commented {
-                        node.properties[p.0] = p.1
+                        node[p.0] = p.1
                     }
                 default:
                     let v = try _value()
@@ -199,6 +200,7 @@ public class KDLParser {
         case .IDENT(let s), .STRING(let s), .RAWSTRING(let s):
             return .string(s)
         case .INTEGER(let i): return .int(i)
+        case .BIGINT(let i): return .bigint(i)
         case .FLOAT(let f): return .float(f)
         case .DECIMAL(let d): return .decimal(d)
         case .TRUE: return .bool(true)
