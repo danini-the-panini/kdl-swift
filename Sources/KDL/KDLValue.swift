@@ -2,7 +2,7 @@ import Foundation
 import BigDecimal
 import BigInt
 
-enum KDLValue: Equatable, CustomStringConvertible {
+public enum KDLValue: Equatable, CustomStringConvertible {
     case string(String, String? = nil)
     case int(Int, String? = nil)
     case bigint(BInt, String? = nil)

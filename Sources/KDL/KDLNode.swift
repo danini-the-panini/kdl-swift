@@ -10,7 +10,7 @@ public struct KDLNode: Equatable, CustomStringConvertible {
     var children: [KDLNode] = []
     var type: String? = nil
 
-    init(_ name: String, arguments: [KDLValue] = [], properties: [String:KDLValue] = [:], children: [KDLNode] = [], type: String? = nil) {
+    public init(_ name: String, arguments: [KDLValue] = [], properties: [String:KDLValue] = [:], children: [KDLNode] = [], type: String? = nil) {
         self.name = name
         self.arguments = arguments
         self.properties = properties
@@ -19,7 +19,7 @@ public struct KDLNode: Equatable, CustomStringConvertible {
         self.type = type
     }
 
-    subscript(index: Int) -> KDLValue {
+    public subscript(index: Int) -> KDLValue {
         get {
             return arguments[index]
         }
@@ -28,7 +28,7 @@ public struct KDLNode: Equatable, CustomStringConvertible {
         }
     }
 
-    subscript(key: String) -> KDLValue? {
+    public subscript(key: String) -> KDLValue? {
         get {
             return properties[key]
         }
@@ -40,11 +40,53 @@ public struct KDLNode: Equatable, CustomStringConvertible {
         }
     }
 
+    public func child(_ index: Int) -> KDLNode {
+        return children[index]
+    }
+
+    public func child(_ key: String) -> KDLNode? {
+        return children.first { $0.name == key }
+    }
+
+    public var arg: KDLValue? {
+        return arguments.first
+    }
+
+    public func arg(_ index: Int) -> KDLValue? {
+        return child(index).arg
+    }
+
+    public  func arg(_ key: String) -> KDLValue? {
+        return child(key)?.arg
+    }
+
+    public  func args(_ index: Int) -> [KDLValue] {
+        return child(index).arguments
+    }
+
+    public  func args(_ key: String) -> [KDLValue]? {
+        return child(key)?.arguments
+    }
+
+    public var dashVals: [KDLValue?] {
+        children
+            .filter { $0.name == "-" }
+            .map { $0.arguments.first }
+    }
+
+    public  func dashVals(_ index: Int) -> [KDLValue?] {
+        return child(index).dashVals
+    }
+
+    public  func dashVals(_ key: String) -> [KDLValue?]? {
+        return child(key)?.dashVals
+    }
+
     public var description: String {
         return fmt()
     }
 
-    func fmt(depth: Int = 0) -> String {
+    internal func fmt(depth: Int = 0) -> String {
         let indent = String(repeating: "    ", count: depth)
         let typeStr = type != nil ? "(\(_idToString(type!)))" : ""
         var s = "\(indent)\(typeStr)\(_idToString(name))";
