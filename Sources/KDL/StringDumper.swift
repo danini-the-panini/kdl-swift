@@ -1,5 +1,3 @@
-
-
 public class StringDumper {
     var string: String
 
@@ -28,7 +26,7 @@ public class StringDumper {
 
     func _isBareIdentifier() -> Bool {
         do {
-            if try ["", "true", "fase", "null", "#true", "#false", "#null"].contains(string) || string.contains(Regex(#"^\.?\d"#)) {
+            if try ["", "true", "false", "null", "inf", "-inf", "nan", "#true", "#false", "#null", "#inf", "#-inf", "#nan"].contains(string) || string.contains(Regex(#"^\.?\d"#)) {
                 return false
             }
 

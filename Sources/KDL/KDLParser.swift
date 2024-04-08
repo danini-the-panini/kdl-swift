@@ -248,5 +248,4 @@ public class KDLParser {
         default: throw ParserError.expectedButGot("EOF", t)
         }
     }
-
 }
