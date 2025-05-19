@@ -19,7 +19,7 @@ public enum KDLTokenizerContext {
     case equals
 }
 
-public enum KDLToken: Equatable {
+public enum KDLToken: Equatable, Sendable {
     case IDENT(String)
     case STRING(String)
     case RAWSTRING(String)

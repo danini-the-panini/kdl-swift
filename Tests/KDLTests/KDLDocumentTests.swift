@@ -1,51 +1,52 @@
-import XCTest
+import Testing
 import BigDecimal
 @testable import KDL
 
-final class KDLDocumentaTests: XCTestCase {
-    func testSubscript() throws {
+@Suite("Document tests")
+struct KDLDocumentTests {
+    @Test static func testSubscript() throws {
         let doc = KDLDocument([
             KDLNode("foo"),
             KDLNode("bar")
         ])
 
-        XCTAssertEqual(doc[0], doc.nodes[0])
-        XCTAssertEqual(doc[1], doc.nodes[1])
+        #expect(doc[0] == doc.nodes[0])
+        #expect(doc[1] == doc.nodes[1])
 
-        XCTAssertEqual(doc["foo"], doc.nodes[0])
-        XCTAssertEqual(doc["bar"], doc.nodes[1])
+        #expect(doc["foo"] == doc.nodes[0])
+        #expect(doc["bar"] == doc.nodes[1])
 
-        XCTAssertNil(doc["baz"])
+        #expect(doc["baz"] == nil)
     }
 
-    func testArg() throws {
+    @Test static func testArg() throws {
         let doc = KDLDocument([
             KDLNode("foo", arguments: [.string("bar")]),
             KDLNode("baz", arguments: [.string("qux")])
         ])
 
-        XCTAssertEqual(doc.arg(0), .string("bar"))
-        XCTAssertEqual(doc.arg("foo"), .string("bar"))
-        XCTAssertEqual(doc.arg(1), .string("qux"))
-        XCTAssertEqual(doc.arg("baz"), .string("qux"))
+        #expect(doc.arg(0) == .string("bar"))
+        #expect(doc.arg("foo") == .string("bar"))
+        #expect(doc.arg(1) == .string("qux"))
+        #expect(doc.arg("baz") == .string("qux"))
 
-        XCTAssertNil(doc.arg("norf"))
+        #expect(doc.arg("norf") == nil)
     }
 
-    func testArgs() throws {
+    @Test static func testArgs() throws {
         let doc = KDLDocument([
             KDLNode("foo", arguments: [.string("bar"), .string("baz")]),
             KDLNode("qux", arguments: [.string("norf")])
         ])
 
-        XCTAssertEqual(doc.args(0), [.string("bar"), .string("baz")])
-        XCTAssertEqual(doc.args("foo"), [.string("bar"), .string("baz")])
-        XCTAssertEqual(doc.args(1), [.string("norf")])
-        XCTAssertEqual(doc.args("qux"), [.string("norf")])
-        XCTAssertNil(doc.args("wat"))
+        #expect(doc.args(0) == [.string("bar"), .string("baz")])
+        #expect(doc.args("foo") == [.string("bar"), .string("baz")])
+        #expect(doc.args(1) == [.string("norf")])
+        #expect(doc.args("qux") == [.string("norf")])
+        #expect(doc.args("wat") == nil)
     }
 
-    func testDashVals() throws {
+    @Test static func testDashVals() throws {
         let doc = KDLDocument([
             KDLNode("node", children: [
                 KDLNode("-", arguments: [.string("foo")]),
@@ -54,8 +55,8 @@ final class KDLDocumentaTests: XCTestCase {
             ])
         ])
 
-        XCTAssertEqual(doc.dashVals(0), [.string("foo"), .string("bar"), .string("baz")])
-        XCTAssertEqual(doc.dashVals("node"), [.string("foo"), .string("bar"), .string("baz")])
-        XCTAssertNil(doc.dashVals("asdf"))
+        #expect(doc.dashVals(0) == [.string("foo"), .string("bar"), .string("baz")])
+        #expect(doc.dashVals("node") == [.string("foo"), .string("bar"), .string("baz")])
+        #expect(doc.dashVals("asdf") == nil)
     }
 }

@@ -1,5 +1,5 @@
 public class KDLParser {
-    enum ParserError: Error {
+    enum ParserError: Error, Sendable {
         case unexpectedToken(KDLToken)
         case expectedButGot(String, KDLToken)
     }

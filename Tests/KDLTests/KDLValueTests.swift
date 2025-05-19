@@ -1,22 +1,23 @@
-import XCTest
+import Testing
 import BigDecimal
 @testable import KDL
 
-final class KDLValueTests: XCTestCase {
+@Suite("Value tests")
+final class KDLValueTests {
     func testDescription() throws {
-        XCTAssertEqual(KDLValue.int(1).description, "1")
-        XCTAssertEqual(KDLValue.int(1, "foo").description, "(foo)1")
-        XCTAssertEqual(KDLValue.int(1, #"foo"bar"#).description, #"("foo\"bar")1"#)
-        XCTAssertEqual(KDLValue.float(1.5).description, "1.5")
-        XCTAssertEqual(KDLValue.decimal(BigDecimal("1.5E1000")).description, "1.5E+1000")
-        XCTAssertEqual(KDLValue.decimal(BigDecimal("1.5E-1000")).description, "1.5E-1000")
-        XCTAssertEqual(KDLValue.float(Float.infinity).description, "#inf")
-        XCTAssertEqual(KDLValue.float(-Float.infinity).description, "#-inf")
-        XCTAssertEqual(KDLValue.float(Float.nan).description, "#nan")
-        XCTAssertEqual(KDLValue.bool(true).description, "#true")
-        XCTAssertEqual(KDLValue.bool(false).description, "#false")
-        XCTAssertEqual(KDLValue.null().description, "#null")
-        XCTAssertEqual(KDLValue.string("foo").description, "foo")
-        XCTAssertEqual(KDLValue.string(#"foo "bar" baz"#).description, "\"foo \\\"bar\\\" baz\"")
+        #expect(KDLValue.int(1).description == "1")
+        #expect(KDLValue.int(1, "foo").description == "(foo)1")
+        #expect(KDLValue.int(1, #"foo"bar"#).description == #"("foo\"bar")1"#)
+        #expect(KDLValue.float(1.5).description == "1.5")
+        #expect(KDLValue.decimal(BigDecimal("1.5E1000")).description == "1.5E+1000")
+        #expect(KDLValue.decimal(BigDecimal("1.5E-1000")).description == "1.5E-1000")
+        #expect(KDLValue.float(Float.infinity).description == "#inf")
+        #expect(KDLValue.float(-Float.infinity).description == "#-inf")
+        #expect(KDLValue.float(Float.nan).description == "#nan")
+        #expect(KDLValue.bool(true).description == "#true")
+        #expect(KDLValue.bool(false).description == "#false")
+        #expect(KDLValue.null().description == "#null")
+        #expect(KDLValue.string("foo").description == "foo")
+        #expect(KDLValue.string(#"foo "bar" baz"#).description == "\"foo \\\"bar\\\" baz\"")
     }
 }
