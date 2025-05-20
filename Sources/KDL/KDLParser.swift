@@ -125,7 +125,7 @@ public class KDLParser {
         while true {
             var peek = try tokenizer.peekToken()
             switch peek {
-            case .WS:
+            case .WS, .SLASHDASH:
                 try _wsStar()
                 peek = try tokenizer.peekToken()
                 if peek == .SLASHDASH {

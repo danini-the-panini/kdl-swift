@@ -5,7 +5,7 @@ public class StringUnescaper {
         self.str = str
     }
 
-    public func unescapeWs() -> String {
+    public func unescapeWs(skipBs: Bool = false) -> String {
         var i = 0
         var buffer = ""
         while i < str.count {
@@ -28,6 +28,7 @@ public class StringUnescaper {
                         }
                 case .some("\\"):
                     buffer += "\\"
+                    if skipBs { buffer += "\\" }
                     i += 2
                 default:
                     buffer += String(c!)
@@ -51,7 +52,7 @@ public class StringUnescaper {
             case .some("\\"):
                 switch char(i+1) {
                     case .none: return buffer
-                    case .some("\\"): buffer += "\\"
+                    case .some("\\"): buffer += "\\"; i += 1
                     case .some("n"): buffer += "\n"; i += 1
                     case .some("r"): buffer += "\r"; i += 1
                     case .some("t"): buffer += "\t"; i += 1
@@ -72,7 +73,7 @@ public class StringUnescaper {
                                     throw KDLTokenizer.TokenizationError.invalidUnicodeEscape(hex)
                                 }
                                 if let code = Int(hex, radix: 16) {
-                                    if code < 0 || code > 0x10FFFF {
+                                    if code < 0 || code > 0x10FFFF || (code >= 0xD800 && code <= 0xDFFF) {
                                         throw KDLTokenizer.TokenizationError.invalidCodePoint(code)
                                     }
                                     i = j
@@ -101,17 +102,22 @@ public class StringUnescaper {
         }
         let indent = lines.removeLast()
 
+        let wsStar = try Regex("\(KDLTokenizer.WS)*")
+
         if !indent.isEmpty {
             if indent.contains(where: { !KDLTokenizer.WHITESPACE.contains($0) }) {
                 throw KDLTokenizer.TokenizationError.invalidMultilineFinalLine
             }
-            if lines.contains(where: { !$0.starts(with: indent) }) {
+            if try lines.contains(where: { try !$0.starts(with: indent) && wsStar.wholeMatch(in: $0) == nil }) {
                 throw KDLTokenizer.TokenizationError.invalidMultilineIndentation
             }
         }
 
-        return lines.map {
-            $0.suffix(from: $0.index($0.startIndex, offsetBy: indent.count))
+        return try lines.map {
+            if try wsStar.wholeMatch(in: $0) != nil {
+                return ""
+            }
+            return String($0.suffix(from: $0.index($0.startIndex, offsetBy: indent.count)))
         }.joined(separator: "\n")
     }
 

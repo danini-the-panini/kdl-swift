@@ -4,7 +4,7 @@ import BigDecimal
 
 @Suite("Value tests")
 final class KDLValueTests {
-    func testDescription() throws {
+    @Test func testDescription() throws {
         #expect(KDLValue.int(1).description == "1")
         #expect(KDLValue.int(1, "foo").description == "(foo)1")
         #expect(KDLValue.int(1, #"foo"bar"#).description == #"("foo\"bar")1"#)

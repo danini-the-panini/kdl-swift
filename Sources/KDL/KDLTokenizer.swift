@@ -61,8 +61,6 @@ public class KDLTokenizer {
     ]
     static let WS = "[\(WHITESPACE.map{"\($0)"}.joined(separator: ""))]"
 
-    static let VERSION_PATTERN = "\\/-\(WS)*kdl-version\(WS)+(\\d+)\(WS)*\(NEWLINES_PATTERN)"
-
     static let SYMBOLS: [Character : KDLToken] = [
         "{": KDLToken.LBRACE,
         "}": KDLToken.RBRACE,
@@ -99,6 +97,8 @@ public class KDLTokenizer {
         charRange(from: 0x2066, to: 0x2069),
         ["\u{FEFF}"]
     )
+
+    static let VERSION_PATTERN = "\\/-\(WS)*kdl-version\(WS)+(\\d+)\(WS)*\(NEWLINES_PATTERN)"
 
     enum TokenizationError : Error {
         case unexpectedCharacter(Character)
@@ -153,11 +153,11 @@ public class KDLTokenizer {
 
     public func versionDirective() throws -> UInt? {
         if let match = try Regex(KDLTokenizer.VERSION_PATTERN).prefixMatch(in: str) {
-            if match.output.count < 2 { return nil }
-            return UInt(match.output[1].substring!)
-        } else {
-            return nil
+            if let version = match.output[1].substring {
+                return UInt(version)
+            }
         }
+        return nil
     }
 
     public func reset() {
@@ -254,11 +254,11 @@ public class KDLTokenizer {
                             }
                             if try char(i) == "\"" {
                                 self.buffer = ""
-                                if try char(i + 2) == "\"" && char(i + 3) == "\"" {
-                                    let c2 = try char(i + 4)
+                                if try char(i + 1) == "\"" && char(i + 2) == "\"" {
+                                    let c2 = try char(i + 3)
                                     if c2 != nil && KDLTokenizer.NEWLINES.contains(c2!) {
                                         self.context = .multiLineRawstring
-                                        try _traverse(rawstringHashes + i + 4)
+                                        try _traverse(rawstringHashes + 4)
                                     } else {
                                         throw TokenizationError.unexpectedCharacter(c2!)
                                     }
@@ -435,7 +435,7 @@ public class KDLTokenizer {
                         case "\"":
                             if try char(index + 1) == "\"" && char(index + 2) == "\"" {
                                 try _traverse(3)
-                                return .STRING(try _unescapeNonWs(_dedent(_unescapeWs(buffer))))
+                                return .STRING(try _unescapeNonWs(_dedent(_unescapeWs(buffer, skipBs: true))))
                             }
                             self.buffer += String(c!)
                             try _traverse()
@@ -706,8 +706,8 @@ public class KDLTokenizer {
         return s.replacing("_", with: "")
     }
 
-    func _unescapeWs(_ string: String) -> String {
-        return StringUnescaper(string).unescapeWs()
+    func _unescapeWs(_ string: String, skipBs: Bool) -> String {
+        return StringUnescaper(string).unescapeWs(skipBs: skipBs)
     }
 
     func _unescapeNonWs(_ string: String) throws -> String {
@@ -715,7 +715,7 @@ public class KDLTokenizer {
     }
 
     func _unescape(_ string: String) throws -> String {
-        return try _unescapeNonWs(_unescapeWs(string))
+        return try _unescapeNonWs(_unescapeWs(string, skipBs: true))
     }
 
     func _dedent(_ string: String) throws -> String {

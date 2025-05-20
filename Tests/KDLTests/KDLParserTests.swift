@@ -57,6 +57,8 @@ struct KDLParserTests {
         try #expect(parser.parse("node 1 /- 2 3") == KDLDocument([KDLNode("node", arguments: [.int(1), .int(3)])]))
         try #expect(parser.parse("node /--1") == KDLDocument([KDLNode("node")]))
         try #expect(parser.parse("node /- -1") == KDLDocument([KDLNode("node")]))
+        try #expect(parser.parse("node/-1") == KDLDocument([KDLNode("node")]))
+        try #expect(parser.parse(#"node "string"/-1"#) == KDLDocument([KDLNode("node", arguments: [.string("string")])]))
         try #expect(parser.parse("node \\\n/- -1") == KDLDocument([KDLNode("node")]))
     }
 
@@ -64,6 +66,8 @@ struct KDLParserTests {
         let parser = KDLParser()
         try #expect(parser.parse("node /-key=1") == KDLDocument([KDLNode("node")]))
         try #expect(parser.parse("node /- key=1") == KDLDocument([KDLNode("node")]))
+        try #expect(parser.parse("node/-key=1") == KDLDocument([KDLNode("node")]))
+        try #expect(parser.parse(#"node "string"/-key=1"#) == KDLDocument([KDLNode("node", arguments: [.string("string")])]))
         try #expect(parser.parse("node key=1 /-key2=2") == KDLDocument([KDLNode("node", properties: ["key": .int(1)])]))
     }
 
@@ -72,6 +76,8 @@ struct KDLParserTests {
         try #expect(parser.parse("node /-{}") == KDLDocument([KDLNode("node")]))
         try #expect(parser.parse("node /- {}") == KDLDocument([KDLNode("node")]))
         try #expect(parser.parse("node /-{\nnode2\n}") == KDLDocument([KDLNode("node")]))
+        try #expect(parser.parse("node/-{}") == KDLDocument([KDLNode("node")]))
+        try #expect(parser.parse(#"node "string"/-{}"#) == KDLDocument([KDLNode("node", arguments: [.string("string")])]))
     }
 
     @Test static func testString() throws {
@@ -93,6 +99,11 @@ struct KDLParserTests {
         let parser = KDLParser()
         try #expect(parser.parse("node \"\"\"\n  foo\n  bar\n    baz\n  qux\n  \"\"\"") == KDLDocument([KDLNode("node", arguments: [.string("foo\nbar\n  baz\nqux")])]))
         try #expect(parser.parse("node #\"\"\"\n  foo\n  bar\n    baz\n  qux\n  \"\"\"#") == KDLDocument([KDLNode("node", arguments: [.string("foo\nbar\n  baz\nqux")])]))
+        try #expect(parser.parse(###"""
+            node ##"""
+            """triple-quote"""
+            """##
+        """###) == KDLDocument([KDLNode("node", arguments: [.string(#""""triple-quote""""#)])]))
         #expect(throws: (any Error).self) { try parser.parse("node \"\"\"\n    foo\n  bar\n    baz\n    \"\"\"") }
         #expect(throws: (any Error).self) { try parser.parse("node #\"\"\"\n    foo\n  bar\n    baz\n    \"\"\"#") }
     }
@@ -163,6 +174,8 @@ struct KDLParserTests {
         try #expect(parser.parse(###"node ##"foo"##"###) == KDLDocument([KDLNode("node", arguments: [.string("foo")])]))
         try #expect(parser.parse(##"node #"\nfoo\r"#"##) == KDLDocument([KDLNode("node", arguments: [.string(#"\nfoo\r"#)])]))
         #expect(throws: (any Error).self) { try parser.parse(###"node ##"foo"#"###) }
+        #expect(throws: (any Error).self) { try parser.parse(##"node r#"foo"#"##) }
+        #expect(throws: (any Error).self) { try parser.parse(#"node r"foo""#) }
     }
 
     @Test static func testBoolean() throws {
@@ -477,6 +490,13 @@ struct KDLParserTests {
             KDLNode("node2", arguments: [.string("\n\t\r\\\"\u{0C}\u{08}")]),
         ])
         #expect(doc == nodes)
+
+        #expect(throws: (any Error).self) { try parser.parse(#"node1 "\u"#) }
+        #expect(throws: (any Error).self) { try parser.parse(#"node1 "\u{}"#) }
+        #expect(throws: (any Error).self) { try parser.parse(#"node1 "\u{"#) }
+        #expect(throws: (any Error).self) { try parser.parse(#"node1 "\u}"#) }
+        #expect(throws: (any Error).self) { try parser.parse(#"node1 "\u1234"#) }
+        #expect(throws: (any Error).self) { try parser.parse(#"node1 "\u{0123456}"#) }
     }
 
     @Test static func testNodeType() throws {
