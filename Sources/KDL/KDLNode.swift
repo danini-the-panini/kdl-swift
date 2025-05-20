@@ -9,14 +9,16 @@ public struct KDLNode: Equatable, CustomStringConvertible {
     var keys: [String] = []
     var children: [KDLNode] = []
     var type: String? = nil
+    var version: UInt
 
-    public init(_ name: String, arguments: [KDLValue] = [], properties: [String:KDLValue] = [:], children: [KDLNode] = [], type: String? = nil) {
+    public init(_ name: String, arguments: [KDLValue] = [], properties: [String:KDLValue] = [:], children: [KDLNode] = [], type: String? = nil, version: UInt = 2) {
         self.name = name
         self.arguments = arguments
         self.properties = properties
         self.keys = Array(properties.keys)
         self.children = children
         self.type = type
+        self.version = 2
     }
 
     public subscript(index: Int) -> KDLValue {

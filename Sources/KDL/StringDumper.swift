@@ -30,7 +30,7 @@ public class StringDumper {
                 return false
             }
 
-            return string.allSatisfy { !NON_IDENTIFIER_CHARS.contains($0) }
+            return string.allSatisfy { !KDLTokenizer.NON_IDENTIFIER_CHARS.contains($0) }
         } catch let e {
             print("WARNING: failed to dump string, \(String(describing: e))")
             return false

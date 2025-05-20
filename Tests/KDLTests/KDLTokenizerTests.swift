@@ -4,59 +4,63 @@ import BigDecimal
 
 @Suite("Tokenizer tests")
 final class KDLTokenizerTests {
-    func testPeekAndPeekAfterNext() throws {
+    @Test func testPeekAndPeekAfterNext() throws {
         let tokenizer = KDLTokenizer("node 1 2 3")
-        #expect(try tokenizer.peekToken() == .IDENT("node"))
-        #expect(try tokenizer.peekTokenAfterNext() == .WS)
+        try #expect(tokenizer.peekToken() == .IDENT("node"))
+        try #expect(tokenizer.peekTokenAfterNext() == .WS)
+        try #expect(tokenizer.nextToken() == .IDENT("node"))
+        try #expect(tokenizer.peekToken() == .WS)
+        try #expect(tokenizer.peekTokenAfterNext() == .INTEGER(1))
     }
 
-    func testIdentifier() throws {
-        #expect(try KDLTokenizer("foo").nextToken() == .IDENT("foo"))
-        #expect(try KDLTokenizer("foo-bar123").nextToken() == .IDENT("foo-bar123"))
-        #expect(try KDLTokenizer("-").nextToken() == .IDENT("-"))
-        #expect(try KDLTokenizer("--").nextToken() == .IDENT("--"))
+    @Test func testIdentifier() throws {
+        try #expect(KDLTokenizer("foo").nextToken() == .IDENT("foo"))
+        try #expect(KDLTokenizer("foo-bar123").nextToken() == .IDENT("foo-bar123"))
+        try #expect(KDLTokenizer("-").nextToken() == .IDENT("-"))
+        try #expect(KDLTokenizer("--").nextToken() == .IDENT("--"))
     }
 
-    func testString() throws {
-        #expect(try KDLTokenizer(#""foo""#).nextToken() == .STRING("foo"))
-        #expect(try KDLTokenizer(#""foo\nbar""#).nextToken() == .STRING("foo\nbar"))
-        #expect(try KDLTokenizer(#""\u{10FFF}""#).nextToken() == .STRING("\u{10FFF}"))
+    @Test func testString() throws {
+        try #expect(KDLTokenizer(#""foo""#).nextToken() == .STRING("foo"))
+        try #expect(KDLTokenizer(#""foo\nbar""#).nextToken() == .STRING("foo\nbar"))
+        try #expect(KDLTokenizer(#""\u{10FFF}""#).nextToken() == .STRING("\u{10FFF}"))
+        try #expect(KDLTokenizer("\"\\\n\n\nfoo\"").nextToken() == .STRING("foo"))
     }
 
-    func testRawstring() throws {
-        #expect(try KDLTokenizer(##"#"foo\nbar"#"##).nextToken() == .RAWSTRING(#"foo\nbar"#))
-        #expect(try KDLTokenizer(##"#"foo"bar"#"##).nextToken() == .RAWSTRING(#"foo"bar"#))
-        #expect(try KDLTokenizer(###"##"foo"#bar"##"###).nextToken() == .RAWSTRING(##"foo"#bar"##))
-        #expect(try KDLTokenizer(##"#""foo""#"##).nextToken() == .RAWSTRING(#""foo""#))
+    @Test func testRawstring() throws {
+        try #expect(KDLTokenizer(##"#"foo\nbar"#"##).nextToken() == .RAWSTRING(#"foo\nbar"#))
+        try #expect(KDLTokenizer(##"#"foo"bar"#"##).nextToken() == .RAWSTRING(#"foo"bar"#))
+        try #expect(KDLTokenizer(###"##"foo"#bar"##"###).nextToken() == .RAWSTRING(##"foo"#bar"##))
+        try #expect(KDLTokenizer(##"#""foo""#"##).nextToken() == .RAWSTRING(#""foo""#))
 
         var tokenizer = KDLTokenizer(##"node #"C:\Users\zkat\"#"##)
-        #expect(try tokenizer.nextToken() == .IDENT("node"))
-        #expect(try tokenizer.nextToken() == .WS)
-        #expect(try tokenizer.nextToken() == .RAWSTRING(#"C:\Users\zkat\"#))
+        try #expect(tokenizer.nextToken() == .IDENT("node"))
+        try #expect(tokenizer.nextToken() == .WS)
+        try #expect(tokenizer.nextToken() == .RAWSTRING(#"C:\Users\zkat\"#))
 
         tokenizer = KDLTokenizer(##"other-node #"hello"world"#"##)
-        #expect(try tokenizer.nextToken() == .IDENT("other-node"))
-        #expect(try tokenizer.nextToken() == .WS)
-        #expect(try tokenizer.nextToken() == .RAWSTRING(#"hello"world"#))
+        try #expect(tokenizer.nextToken() == .IDENT("other-node"))
+        try #expect(tokenizer.nextToken() == .WS)
+        try #expect(tokenizer.nextToken() == .RAWSTRING(#"hello"world"#))
     }
 
-    func testInteger() throws {
-        #expect(try KDLTokenizer("123").nextToken() == .INTEGER(123))
-        #expect(try KDLTokenizer("0x0123456789abcdef").nextToken() == .INTEGER(0x0123456789abcdef))
-        #expect(try KDLTokenizer("0o01234567").nextToken() == .INTEGER(0o01234567))
-        #expect(try KDLTokenizer("0b101001").nextToken() == .INTEGER(0b101001))
-        #expect(try KDLTokenizer("-0x0123456789abcdef").nextToken() == .INTEGER(-0x0123456789abcdef))
-        #expect(try KDLTokenizer("-0o01234567").nextToken() == .INTEGER(-0o01234567))
-        #expect(try KDLTokenizer("-0b101001").nextToken() == .INTEGER(-0b101001))
-        #expect(try KDLTokenizer("+0x0123456789abcdef").nextToken() == .INTEGER(0x0123456789abcdef))
-        #expect(try KDLTokenizer("+0o01234567").nextToken() == .INTEGER(0o01234567))
-        #expect(try KDLTokenizer("+0b101001").nextToken() == .INTEGER(0b101001))
+    @Test func testInteger() throws {
+        try #expect(KDLTokenizer("123").nextToken() == .INTEGER(123))
+        try #expect(KDLTokenizer("0x0123456789abcdef").nextToken() == .INTEGER(0x0123456789abcdef))
+        try #expect(KDLTokenizer("0o01234567").nextToken() == .INTEGER(0o01234567))
+        try #expect(KDLTokenizer("0b101001").nextToken() == .INTEGER(0b101001))
+        try #expect(KDLTokenizer("-0x0123456789abcdef").nextToken() == .INTEGER(-0x0123456789abcdef))
+        try #expect(KDLTokenizer("-0o01234567").nextToken() == .INTEGER(-0o01234567))
+        try #expect(KDLTokenizer("-0b101001").nextToken() == .INTEGER(-0b101001))
+        try #expect(KDLTokenizer("+0x0123456789abcdef").nextToken() == .INTEGER(0x0123456789abcdef))
+        try #expect(KDLTokenizer("+0o01234567").nextToken() == .INTEGER(0o01234567))
+        try #expect(KDLTokenizer("+0b101001").nextToken() == .INTEGER(0b101001))
     }
 
-    func testFloat() throws {
-        #expect(try KDLTokenizer("1.23").nextToken() == .DECIMAL(BigDecimal("1.23")))
-        #expect(try KDLTokenizer("#inf").nextToken() == .FLOAT(Float.infinity))
-        #expect(try KDLTokenizer("#-inf").nextToken() == .FLOAT(-Float.infinity))
+    @Test func testFloat() throws {
+        try #expect(KDLTokenizer("1.23").nextToken() == .DECIMAL(BigDecimal("1.23")))
+        try #expect(KDLTokenizer("#inf").nextToken() == .FLOAT(Float.infinity))
+        try #expect(KDLTokenizer("#-inf").nextToken() == .FLOAT(-Float.infinity))
         let nan = try KDLTokenizer("#nan").nextToken()
         switch nan {
             case .FLOAT(let x): #expect(x.isNaN)
@@ -64,65 +68,62 @@ final class KDLTokenizerTests {
         }
     }
 
-    func testBooleazn() throws {
-        #expect(try KDLTokenizer("#true").nextToken() == .TRUE)
-        #expect(try KDLTokenizer("#false").nextToken() == .FALSE)
+    @Test func testBooleazn() throws {
+        try #expect(KDLTokenizer("#true").nextToken() == .TRUE)
+        try #expect(KDLTokenizer("#false").nextToken() == .FALSE)
     }
 
-    func testNull() throws {
-        #expect(try KDLTokenizer("#null").nextToken() == .NULL)
+    @Test func testNull() throws {
+        try #expect(KDLTokenizer("#null").nextToken() == .NULL)
     }
 
-    func testSymbols() throws {
-        #expect(try KDLTokenizer("{").nextToken() == .LBRACE)
-        #expect(try KDLTokenizer("}").nextToken() == .RBRACE)
+    @Test func testSymbols() throws {
+        try #expect(KDLTokenizer("{").nextToken() == .LBRACE)
+        try #expect(KDLTokenizer("}").nextToken() == .RBRACE)
     }
 
-    func testEquals() throws {
-        #expect(try KDLTokenizer("=").nextToken() == .EQUALS)
-        #expect(try KDLTokenizer(" =").nextToken() == .EQUALS)
-        #expect(try KDLTokenizer("= ").nextToken() == .EQUALS)
-        #expect(try KDLTokenizer(" = ").nextToken() == .EQUALS)
-        #expect(try KDLTokenizer(" =foo").nextToken() == .EQUALS)
-        #expect(try KDLTokenizer("\u{FE66}").nextToken() == .EQUALS)
-        #expect(try KDLTokenizer("\u{FF1D}").nextToken() == .EQUALS)
-        #expect(try KDLTokenizer("🟰").nextToken() == .EQUALS)
+    @Test func testEquals() throws {
+        try #expect(KDLTokenizer("=").nextToken() == .EQUALS)
+        try #expect(KDLTokenizer(" =").nextToken() == .EQUALS)
+        try #expect(KDLTokenizer("= ").nextToken() == .EQUALS)
+        try #expect(KDLTokenizer(" = ").nextToken() == .EQUALS)
+        try #expect(KDLTokenizer(" =foo").nextToken() == .EQUALS)
     }
 
-    func testWhitespace() throws {
-        #expect(try KDLTokenizer(" ").nextToken() == .WS)
-        #expect(try KDLTokenizer("\t").nextToken() == .WS)
-        #expect(try KDLTokenizer("    \t").nextToken() == .WS)
-        #expect(try KDLTokenizer("\\\n").nextToken() == .WS)
-        #expect(try KDLTokenizer("\\").nextToken() == .WS)
-        #expect(try KDLTokenizer("\\//some comment\n").nextToken() == .WS)
-        #expect(try KDLTokenizer("\\ //some comment\n").nextToken() == .WS)
-        #expect(try KDLTokenizer("\\//some comment").nextToken() == .WS)
-        #expect(try KDLTokenizer(" \\\n").nextToken() == .WS)
-        #expect(try KDLTokenizer(" \\//some comment\n").nextToken() == .WS)
-        #expect(try KDLTokenizer(" \\ //some comment\n").nextToken() == .WS)
-        #expect(try KDLTokenizer(" \\//some comment").nextToken() == .WS)
-        #expect(try KDLTokenizer(" \\\n  \\\n  ").nextToken() == .WS)
+    @Test func testWhitespace() throws {
+        try #expect(KDLTokenizer(" ").nextToken() == .WS)
+        try #expect(KDLTokenizer("\t").nextToken() == .WS)
+        try #expect(KDLTokenizer("    \t").nextToken() == .WS)
+        try #expect(KDLTokenizer("\\\n").nextToken() == .WS)
+        try #expect(KDLTokenizer("\\").nextToken() == .WS)
+        try #expect(KDLTokenizer("\\//some comment\n").nextToken() == .WS)
+        try #expect(KDLTokenizer("\\ //some comment\n").nextToken() == .WS)
+        try #expect(KDLTokenizer("\\//some comment").nextToken() == .WS)
+        try #expect(KDLTokenizer(" \\\n").nextToken() == .WS)
+        try #expect(KDLTokenizer(" \\//some comment\n").nextToken() == .WS)
+        try #expect(KDLTokenizer(" \\ //some comment\n").nextToken() == .WS)
+        try #expect(KDLTokenizer(" \\//some comment").nextToken() == .WS)
+        try #expect(KDLTokenizer(" \\\n  \\\n  ").nextToken() == .WS)
     }
 
-    func testMultipleTokens() throws {
+    @Test func testMultipleTokens() throws {
         let tokenizer = KDLTokenizer("node 1 \"two\" a=3")
 
-        #expect(try tokenizer.nextToken() == .IDENT("node"))
-        #expect(try tokenizer.nextToken() == .WS)
-        #expect(try tokenizer.nextToken() == .INTEGER(1))
-        #expect(try tokenizer.nextToken() == .WS)
-        #expect(try tokenizer.nextToken() == .STRING("two"))
-        #expect(try tokenizer.nextToken() == .WS)
-        #expect(try tokenizer.nextToken() == .IDENT("a"))
-        #expect(try tokenizer.nextToken() == .EQUALS)
-        #expect(try tokenizer.nextToken() == .INTEGER(3))
-        #expect(try tokenizer.nextToken() == .EOF)
-        #expect(try tokenizer.nextToken() == .NONE)
+        try #expect(tokenizer.nextToken() == .IDENT("node"))
+        try #expect(tokenizer.nextToken() == .WS)
+        try #expect(tokenizer.nextToken() == .INTEGER(1))
+        try #expect(tokenizer.nextToken() == .WS)
+        try #expect(tokenizer.nextToken() == .STRING("two"))
+        try #expect(tokenizer.nextToken() == .WS)
+        try #expect(tokenizer.nextToken() == .IDENT("a"))
+        try #expect(tokenizer.nextToken() == .EQUALS)
+        try #expect(tokenizer.nextToken() == .INTEGER(3))
+        try #expect(tokenizer.nextToken() == .EOF)
+        try #expect(tokenizer.nextToken() == .NONE)
     }
 
-    func testSingleLineComment() throws {
-        #expect(try KDLTokenizer("// comment").nextToken() == .EOF)
+    @Test func testSingleLineComment() throws {
+        try #expect(KDLTokenizer("// comment").nextToken() == .EOF)
 
         let tokenizer = KDLTokenizer("""
         node1
@@ -130,121 +131,121 @@ final class KDLTokenizerTests {
         node2
         """)
 
-        #expect(try tokenizer.nextToken() == .IDENT("node1"))
-        #expect(try tokenizer.nextToken() == .NEWLINE)
-        #expect(try tokenizer.nextToken() == .NEWLINE)
-        #expect(try tokenizer.nextToken() == .IDENT("node2"))
-        #expect(try tokenizer.nextToken() == .EOF)
-        #expect(try tokenizer.nextToken() == .NONE)
+        try #expect(tokenizer.nextToken() == .IDENT("node1"))
+        try #expect(tokenizer.nextToken() == .NEWLINE)
+        try #expect(tokenizer.nextToken() == .NEWLINE)
+        try #expect(tokenizer.nextToken() == .IDENT("node2"))
+        try #expect(tokenizer.nextToken() == .EOF)
+        try #expect(tokenizer.nextToken() == .NONE)
     }
 
-    func testMultilineComment() throws {
+    @Test func testMultilineComment() throws {
         let tokenizer = KDLTokenizer("foo /*bar=1*/ baz=2");
 
-        #expect(try tokenizer.nextToken() == .IDENT("foo"))
-        #expect(try tokenizer.nextToken() == .WS)
-        #expect(try tokenizer.nextToken() == .IDENT("baz"))
-        #expect(try tokenizer.nextToken() == .EQUALS)
-        #expect(try tokenizer.nextToken() == .INTEGER(2))
-        #expect(try tokenizer.nextToken() == .EOF)
-        #expect(try tokenizer.nextToken() == .NONE)
+        try #expect(tokenizer.nextToken() == .IDENT("foo"))
+        try #expect(tokenizer.nextToken() == .WS)
+        try #expect(tokenizer.nextToken() == .IDENT("baz"))
+        try #expect(tokenizer.nextToken() == .EQUALS)
+        try #expect(tokenizer.nextToken() == .INTEGER(2))
+        try #expect(tokenizer.nextToken() == .EOF)
+        try #expect(tokenizer.nextToken() == .NONE)
     }
 
-    func testUtf8() throws {
-        #expect(try KDLTokenizer("😁").nextToken() == .IDENT("😁"))
-        #expect(try KDLTokenizer(#""😁""#).nextToken() == .STRING("😁"))
-        #expect(try KDLTokenizer("ノード").nextToken() == .IDENT("ノード"))
-        #expect(try KDLTokenizer("お名前").nextToken() == .IDENT("お名前"))
-        #expect(try KDLTokenizer(#""☜(ﾟヮﾟ☜)""#).nextToken() == .STRING("☜(ﾟヮﾟ☜)"))
+    @Test func testUtf8() throws {
+        try #expect(KDLTokenizer("😁").nextToken() == .IDENT("😁"))
+        try #expect(KDLTokenizer(#""😁""#).nextToken() == .STRING("😁"))
+        try #expect(KDLTokenizer("ノード").nextToken() == .IDENT("ノード"))
+        try #expect(KDLTokenizer("お名前").nextToken() == .IDENT("お名前"))
+        try #expect(KDLTokenizer(#""☜(ﾟヮﾟ☜)""#).nextToken() == .STRING("☜(ﾟヮﾟ☜)"))
 
         let tokenizer = KDLTokenizer("""
         smile "😁"
-        ノード お名前＝"☜(ﾟヮﾟ☜)"
+        ノード お名前="☜(ﾟヮﾟ☜)"
         """);
 
-        #expect(try tokenizer.nextToken() == .IDENT("smile"))
-        #expect(try tokenizer.nextToken() == .WS)
-        #expect(try tokenizer.nextToken() == .STRING("😁"))
-        #expect(try tokenizer.nextToken() == .NEWLINE)
-        #expect(try tokenizer.nextToken() == .IDENT("ノード"))
-        #expect(try tokenizer.nextToken() == .WS)
-        #expect(try tokenizer.nextToken() == .IDENT("お名前"))
-        #expect(try tokenizer.nextToken() == .EQUALS)
-        #expect(try tokenizer.nextToken() == .STRING("☜(ﾟヮﾟ☜)"))
-        #expect(try tokenizer.nextToken() == .EOF)
-        #expect(try tokenizer.nextToken() == .NONE)
+        try #expect(tokenizer.nextToken() == .IDENT("smile"))
+        try #expect(tokenizer.nextToken() == .WS)
+        try #expect(tokenizer.nextToken() == .STRING("😁"))
+        try #expect(tokenizer.nextToken() == .NEWLINE)
+        try #expect(tokenizer.nextToken() == .IDENT("ノード"))
+        try #expect(tokenizer.nextToken() == .WS)
+        try #expect(tokenizer.nextToken() == .IDENT("お名前"))
+        try #expect(tokenizer.nextToken() == .EQUALS)
+        try #expect(tokenizer.nextToken() == .STRING("☜(ﾟヮﾟ☜)"))
+        try #expect(tokenizer.nextToken() == .EOF)
+        try #expect(tokenizer.nextToken() == .NONE)
     }
 
-    func testSemicolon() throws {
+    @Test func testSemicolon() throws {
         let tokenizer = KDLTokenizer("node1; node2");
 
-        #expect(try tokenizer.nextToken() == .IDENT("node1"))
-        #expect(try tokenizer.nextToken() == .SEMICOLON)
-        #expect(try tokenizer.nextToken() == .WS)
-        #expect(try tokenizer.nextToken() == .IDENT("node2"))
-        #expect(try tokenizer.nextToken() == .EOF)
-        #expect(try tokenizer.nextToken() == .NONE)
+        try #expect(tokenizer.nextToken() == .IDENT("node1"))
+        try #expect(tokenizer.nextToken() == .SEMICOLON)
+        try #expect(tokenizer.nextToken() == .WS)
+        try #expect(tokenizer.nextToken() == .IDENT("node2"))
+        try #expect(tokenizer.nextToken() == .EOF)
+        try #expect(tokenizer.nextToken() == .NONE)
     }
 
-    func testSlashdash() throws {
+    @Test func testSlashdash() throws {
         let tokenizer = KDLTokenizer("""
         /-mynode /-"foo" /-key=1 /-{
             a
         }
         """)
 
-        #expect(try tokenizer.nextToken() == .SLASHDASH)
-        #expect(try tokenizer.nextToken() == .IDENT("mynode"))
-        #expect(try tokenizer.nextToken() == .WS)
-        #expect(try tokenizer.nextToken() == .SLASHDASH)
-        #expect(try tokenizer.nextToken() == .STRING("foo"))
-        #expect(try tokenizer.nextToken() == .WS)
-        #expect(try tokenizer.nextToken() == .SLASHDASH)
-        #expect(try tokenizer.nextToken() == .IDENT("key"))
-        #expect(try tokenizer.nextToken() == .EQUALS)
-        #expect(try tokenizer.nextToken() == .INTEGER(1))
-        #expect(try tokenizer.nextToken() == .WS)
-        #expect(try tokenizer.nextToken() == .SLASHDASH)
-        #expect(try tokenizer.nextToken() == .LBRACE)
-        #expect(try tokenizer.nextToken() == .NEWLINE)
-        #expect(try tokenizer.nextToken() == .WS)
-        #expect(try tokenizer.nextToken() == .IDENT("a"))
-        #expect(try tokenizer.nextToken() == .NEWLINE)
-        #expect(try tokenizer.nextToken() == .RBRACE)
-        #expect(try tokenizer.nextToken() == .EOF)
-        #expect(try tokenizer.nextToken() == .NONE)
+        try #expect(tokenizer.nextToken() == .SLASHDASH)
+        try #expect(tokenizer.nextToken() == .IDENT("mynode"))
+        try #expect(tokenizer.nextToken() == .WS)
+        try #expect(tokenizer.nextToken() == .SLASHDASH)
+        try #expect(tokenizer.nextToken() == .STRING("foo"))
+        try #expect(tokenizer.nextToken() == .WS)
+        try #expect(tokenizer.nextToken() == .SLASHDASH)
+        try #expect(tokenizer.nextToken() == .IDENT("key"))
+        try #expect(tokenizer.nextToken() == .EQUALS)
+        try #expect(tokenizer.nextToken() == .INTEGER(1))
+        try #expect(tokenizer.nextToken() == .WS)
+        try #expect(tokenizer.nextToken() == .SLASHDASH)
+        try #expect(tokenizer.nextToken() == .LBRACE)
+        try #expect(tokenizer.nextToken() == .NEWLINE)
+        try #expect(tokenizer.nextToken() == .WS)
+        try #expect(tokenizer.nextToken() == .IDENT("a"))
+        try #expect(tokenizer.nextToken() == .NEWLINE)
+        try #expect(tokenizer.nextToken() == .RBRACE)
+        try #expect(tokenizer.nextToken() == .EOF)
+        try #expect(tokenizer.nextToken() == .NONE)
     }
 
-    func testMultilineNodes() throws {
+    @Test func testMultilineNodes() throws {
         let tokenizer = KDLTokenizer("""
         title \\
             "Some title"
         """)
 
-        #expect(try tokenizer.nextToken() == .IDENT("title"))
-        #expect(try tokenizer.nextToken() == .WS)
-        #expect(try tokenizer.nextToken() == .STRING("Some title"))
-        #expect(try tokenizer.nextToken() == .EOF)
-        #expect(try tokenizer.nextToken() == .NONE)
+        try #expect(tokenizer.nextToken() == .IDENT("title"))
+        try #expect(tokenizer.nextToken() == .WS)
+        try #expect(tokenizer.nextToken() == .STRING("Some title"))
+        try #expect(tokenizer.nextToken() == .EOF)
+        try #expect(tokenizer.nextToken() == .NONE)
     }
 
-    func testTypes() throws {
+    @Test func testTypes() throws {
         var tokenizer = KDLTokenizer("(foo)bar")
-        #expect(try tokenizer.nextToken() == .LPAREN)
-        #expect(try tokenizer.nextToken() == .IDENT("foo"))
-        #expect(try tokenizer.nextToken() == .RPAREN)
-        #expect(try tokenizer.nextToken() == .IDENT("bar"))
+        try #expect(tokenizer.nextToken() == .LPAREN)
+        try #expect(tokenizer.nextToken() == .IDENT("foo"))
+        try #expect(tokenizer.nextToken() == .RPAREN)
+        try #expect(tokenizer.nextToken() == .IDENT("bar"))
 
         tokenizer = KDLTokenizer("(foo)/*asdf*/bar")
-        #expect(try tokenizer.nextToken() == .LPAREN)
-        #expect(try tokenizer.nextToken() == .IDENT("foo"))
-        #expect(try tokenizer.nextToken() == .RPAREN)
-        #expect(try tokenizer.nextToken() == .IDENT("bar"))
+        try #expect(tokenizer.nextToken() == .LPAREN)
+        try #expect(tokenizer.nextToken() == .IDENT("foo"))
+        try #expect(tokenizer.nextToken() == .RPAREN)
+        try #expect(tokenizer.nextToken() == .IDENT("bar"))
 
         tokenizer = KDLTokenizer("(foo/*asdf*/)bar")
-        #expect(try tokenizer.nextToken() == .LPAREN)
-        #expect(try tokenizer.nextToken() == .IDENT("foo"))
-        #expect(try tokenizer.nextToken() == .RPAREN)
-        #expect(try tokenizer.nextToken() == .IDENT("bar"))
+        try #expect(tokenizer.nextToken() == .LPAREN)
+        try #expect(tokenizer.nextToken() == .IDENT("foo"))
+        try #expect(tokenizer.nextToken() == .RPAREN)
+        try #expect(tokenizer.nextToken() == .IDENT("bar"))
     }
 }

@@ -2,6 +2,7 @@ public class KDLParser {
     enum ParserError: Error, Sendable {
         case unexpectedToken(KDLToken)
         case expectedButGot(String, KDLToken)
+        case versionMismatchError(UInt, UInt)
     }
 
     enum NodeResult {
@@ -12,27 +13,45 @@ public class KDLParser {
 
     var tokenizer: KDLTokenizer!
     var depth = 0
+    var outputVersion: UInt
+    var parserVersion: UInt = 2
+
+    public init(outputVersion: UInt? = nil) {
+        self.outputVersion = outputVersion ?? 1
+    }
 
     public func parse(
         _ string: String,
         parseTypes: Bool = true
     ) throws -> KDLDocument {
         self.tokenizer = KDLTokenizer(string)
+        try _checkVersion()
         return try _document()
     }
 
+    func _createTokenizer(_ string: String) -> KDLTokenizer {
+        return KDLTokenizer(string)
+    }
+
+    func _checkVersion() throws {
+        switch try tokenizer.versionDirective() {
+        case .none, .some(parserVersion): return
+        case .some(let docVersion):
+            throw ParserError.versionMismatchError(parserVersion, docVersion)
+        }
+    }
+
     func _document() throws -> KDLDocument {
-        let nodes = try _nodes()
+        let nodes = try _nodeList()
         try _linespaceStar()
         try _expectEndOfFile()
         return KDLDocument(nodes)
     }
 
-    func _nodes() throws -> [KDLNode] {
+    func _nodeList() throws -> [KDLNode] {
         var nodes: [KDLNode] = []
         while true {
-            let n = try _node()
-            switch n {
+            switch try _node() {
             case .Node(let node): nodes.append(node)
             case .Null: continue
             case .False: return nodes
@@ -46,8 +65,7 @@ public class KDLParser {
         var commented = false
         switch try tokenizer.peekToken() {
         case .SLASHDASH:
-            let _ = try tokenizer.nextToken()
-            try _wsStar()
+            try _slashdash()
             commented = true
         default: ()
         }
@@ -62,12 +80,7 @@ public class KDLParser {
             return .False
         }
 
-        switch try tokenizer.peekToken() {
-        case .WS, .LBRACE: try _argsPropsChildren(&node)
-        case .SEMICOLON: let _ = try tokenizer.nextToken()
-        case .LPAREN: throw ParserError.unexpectedToken(.LPAREN)
-        default: ()
-        }
+        try _argsPropsChildren(&node)
 
         if commented { return .Null }
 
@@ -108,63 +121,87 @@ public class KDLParser {
 
     func _argsPropsChildren(_ node: inout KDLNode) throws {
         var commented = false
+        var hasChildren = false
         while true {
-            try _wsStar()
-            switch try tokenizer.peekToken() {
-            case .IDENT:
-                switch try tokenizer.peekTokenAfterNext() {
-                case .EQUALS:
-                    let p = try _prop()
-                    if !commented {
-                        node[p.0] = p.1
-                    }
-                default:
-                    let v = try _value()
-                    if !commented {
-                        node.arguments.append(v)
-                    }
-                }
-                commented = false
-            case .LBRACE:
-                self.depth += 1
-                let children = try _children()
-                if !commented {
-                    node.children = children
-                }
-                try _expectNodeTerm()
-                return
-            case .RBRACE:
-                if depth == 0 { throw ParserError.unexpectedToken(.RBRACE) }
-                self.depth -= 1
-                return
-            case .SLASHDASH:
-                commented = true
-                let _ = try tokenizer.nextToken()
+            var peek = try tokenizer.peekToken()
+            switch peek {
+            case .WS:
                 try _wsStar()
-            case .NEWLINE, .EOF, .SEMICOLON:
-                let _ = try tokenizer.nextToken()
-                return
-            case .STRING:
-                switch try tokenizer.peekTokenAfterNext() {
-                case .EQUALS:
-                    let p = try _prop()
-                    if !commented {
-                        node[p.0] = p.1
+                peek = try tokenizer.peekToken()
+                if peek == .SLASHDASH {
+                    try _slashdash()
+                    peek = try tokenizer.peekToken()
+                    commented = true
+                }
+                switch peek {
+                case .STRING, .IDENT:
+                    if hasChildren {
+                        throw ParserError.unexpectedToken(peek)
                     }
+                    switch try tokenizer.peekTokenAfterNext() {
+                    case .EQUALS:
+                        let p = try _prop()
+                        if !commented {
+                            node[p.0] = p.1
+                        }
+                    default:
+                        let v = try _value()
+                        if !commented {
+                            node.arguments.append(v)
+                        }
+                    }
+                    commented = false
+                case .NEWLINE, .EOF, .SEMICOLON:
+                    let _ = try tokenizer.nextToken()
+                    return
+                case .LBRACE:
+                    try _lbrace(&node, commented)
+                    hasChildren = true
+                    commented = false
+                case .RBRACE:
+                    try _rbrace()
+                    return
                 default:
                     let v = try _value()
+                    if hasChildren {
+                        throw ParserError.unexpectedToken(peek)
+                    }
                     if !commented {
                         node.arguments.append(v)
                     }
+                    commented = false
                 }
+            case .EOF, .SEMICOLON, .NEWLINE:
+                let _ = try tokenizer.nextToken()
+                return
+            case .LBRACE:
+                try _lbrace(&node, commented)
+                hasChildren = true
                 commented = false
+            case .RBRACE:
+                try _rbrace()
+                return
             default:
-                let v = try _value()
-                if !commented {
-                    node.arguments.append(v)
-                }
-                commented = false
+                throw ParserError.unexpectedToken(peek)
             }
+        }
+    }
+
+    func _lbrace(_ node : inout KDLNode, _ commented: Bool) throws {
+        if !commented && !node.children.isEmpty {
+            throw ParserError.unexpectedToken(.LBRACE)
+        }
+        self.depth += 1
+        let children = try _children()
+        self.depth -= 1
+        if !commented {
+            node.children = children
+        }
+    }
+
+    func _rbrace() throws {
+        if depth == 0 {
+            throw ParserError.unexpectedToken(.RBRACE)
         }
     }
 
@@ -177,7 +214,7 @@ public class KDLParser {
 
     func _children() throws -> [KDLNode] {
         try _expect(.LBRACE)
-        let nodes = try _nodes()
+        let nodes = try _nodeList()
         try _linespaceStar()
         try _expect(.RBRACE)
         return nodes
@@ -222,23 +259,26 @@ public class KDLParser {
         return type
     }
 
+    func _slashdash() throws {
+        let t = try tokenizer.nextToken()
+        if t != .SLASHDASH {
+            throw ParserError.expectedButGot("slashdash", t)
+        }
+        try _linespaceStar()
+        let peek = try tokenizer.peekToken()
+        switch peek {
+        case .RBRACE, .EOF, .SEMICOLON:
+            throw ParserError.unexpectedToken(peek)
+        default: ()
+        }
+    }
+
     func _expect(_ type: KDLToken) throws {
         let t = try tokenizer.peekToken()
         if t != type {
             throw ParserError.unexpectedToken(t)
         }
         let _ = try tokenizer.nextToken()
-    }
-
-    func _expectNodeTerm() throws {
-        try _wsStar()
-        let t = try tokenizer.peekToken()
-        switch t {
-        case .NEWLINE, .SEMICOLON, .EOF:
-            let _ = try tokenizer.nextToken()
-        case .RBRACE: ()
-        default: throw ParserError.unexpectedToken(t)
-        }
     }
 
     func _expectEndOfFile() throws {
