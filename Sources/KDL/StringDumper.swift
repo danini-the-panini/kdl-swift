@@ -8,6 +8,10 @@ public class StringDumper {
     public func dump() -> String {
         if _isBareIdentifier() { return string }
 
+        return dumpRaw()
+    }
+
+    public func dumpRaw() -> String {
         return "\"\(string.map { _escape($0) }.joined(separator: ""))\""
     }
 
@@ -30,7 +34,7 @@ public class StringDumper {
                 return false
             }
 
-            return string.allSatisfy { !NON_IDENTIFIER_CHARS.contains($0) }
+            return string.allSatisfy { !KDLTokenizer.NON_IDENTIFIER_CHARS.contains($0) }
         } catch let e {
             print("WARNING: failed to dump string, \(String(describing: e))")
             return false

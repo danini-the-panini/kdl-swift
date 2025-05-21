@@ -1,8 +1,10 @@
 public struct KDLDocument: Equatable, CustomStringConvertible {
     var nodes: [KDLNode] = []
+    var version: UInt
 
-    init(_ nodes: [KDLNode] = []) {
+    init(_ nodes: [KDLNode] = [], version: UInt = 2) {
         self.nodes = nodes
+        self.version = version
     }
 
     public subscript(index: Int) -> KDLNode {

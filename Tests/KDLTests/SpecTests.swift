@@ -1,22 +1,44 @@
-import XCTest
+import Testing
+import Foundation
 @testable import KDL
 
 let TEST_CASES = "./Tests/kdl-org/tests/test_cases/"
-let INPUTS = "\(TEST_CASES)/input"
-let EXPECTED = "\(TEST_CASES)/expected_kdl"
+let TEST_CASES_V1 = "./TEsts/v1/tests/test_cases/"
 
-final class SpecTests: XCTestCase {
-    let fm = FileManager.default
+@Suite("Spec tests")
+final class SpecTests {
+    let fm : FileManager
 
-    func testSpecs() throws {
+    init() {
+        fm = FileManager.default
+    }
+
+    @Test func testSpecsV1() throws {
+        try _runSpecs(version: 1, ignore: ["escline_comment_node.kdl"])
+    }
+
+    @Test func testSpecsV2() throws {
+        try _runSpecs(version: 2)
+    }
+
+    func _runSpecs(version: UInt, ignore: [String] = []) throws {
+        let testCases = version == 1 ? TEST_CASES_V1 : TEST_CASES
+        let INPUTS = "\(testCases)/input"
+        let EXPECTED = "\(testCases)/expected_kdl"
         let files = try fm.contentsOfDirectory(atPath: INPUTS)
         for file in files {
+            if ignore.contains(file) { continue }
             let input = _readFile("\(INPUTS)/\(file)")
             if fm.fileExists(atPath: "\(EXPECTED)/\(file)") {
                 let expected = _readFile("\(EXPECTED)/\(file)")
-                XCTAssertEqual(String(describing: try KDL.parseDocument(input)), expected, "\(file) did not match expected")
+                #expect(throws: Never.self, "\(file) failed to parse") {
+                    let actual = String(describing: try KDL.parseDocument(input, version: version))
+                    #expect(actual == expected, "\(file) did not match expected")
+                }
             } else {
-                XCTAssertThrowsError(try KDL.parseDocument(input), "\(file) did not fail to parse")
+                #expect(throws: (any Error).self, "\(file) did not fail to parse") {
+                    try KDL.parseDocument(input, version: version)
+                }
             }
         }
     }
