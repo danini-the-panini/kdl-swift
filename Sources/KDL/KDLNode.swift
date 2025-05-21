@@ -1,7 +1,3 @@
-func _idToString(_ s: String) -> String {
-    return StringDumper(s).dump()
-}
-
 public struct KDLNode: Equatable, CustomStringConvertible {
     var name: String
     var arguments: [KDLValue] = []
@@ -18,7 +14,7 @@ public struct KDLNode: Equatable, CustomStringConvertible {
         self.keys = Array(properties.keys)
         self.children = children
         self.type = type
-        self.version = 2
+        self.version = version
     }
 
     public subscript(index: Int) -> KDLValue {
@@ -111,5 +107,12 @@ public struct KDLNode: Equatable, CustomStringConvertible {
             lhs.properties == rhs.properties &&
             lhs.children == rhs.children &&
             lhs.type == rhs.type
+    }
+
+    func _idToString(_ s: String) -> String {
+        switch version {
+        case 1: return StringDumperV1(s).dump()
+        default: return StringDumper(s).dump()
+        }
     }
 }

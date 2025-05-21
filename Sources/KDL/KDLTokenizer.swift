@@ -141,6 +141,7 @@ public class KDLTokenizer {
     var column = 1
     var lineAtStart = 1
     var columnAtStart = 1
+    var version: UInt = 2
 
     init(_ s: String, start: Int = 0) {
         self.str = s
@@ -323,7 +324,7 @@ public class KDLTokenizer {
                     case "=":
                         self.context = .equals
                         try _traverse()
-                    case _ where KDLTokenizer.SYMBOLS[c!] != nil: ()
+                    case _ where KDLTokenizer.SYMBOLS[c!] != nil:
                         try _traverse()
                         return KDLTokenizer.SYMBOLS[c!]!
                     case _ where KDLTokenizer.NEWLINES.contains(c!):
@@ -706,12 +707,16 @@ public class KDLTokenizer {
         return s.replacing("_", with: "")
     }
 
+    func _unescaper(_ string: String) -> StringUnescaper {
+        return StringUnescaper(string, version: version)
+    }
+
     func _unescapeWs(_ string: String, skipBs: Bool) -> String {
-        return StringUnescaper(string).unescapeWs(skipBs: skipBs)
+        return _unescaper(string).unescapeWs(skipBs: skipBs)
     }
 
     func _unescapeNonWs(_ string: String) throws -> String {
-        return try StringUnescaper(string).unescapeNonWs()
+        return try _unescaper(string).unescapeNonWs()
     }
 
     func _unescape(_ string: String) throws -> String {

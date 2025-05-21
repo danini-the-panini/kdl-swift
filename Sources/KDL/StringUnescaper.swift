@@ -1,8 +1,10 @@
 public class StringUnescaper {
     var str: String
+    var version: UInt
 
-    init(_ str: String) {
+    init(_ str: String, version: UInt = 2) {
         self.str = str
+        self.version = version
     }
 
     public func unescapeWs(skipBs: Bool = false) -> String {
@@ -60,6 +62,7 @@ public class StringUnescaper {
                     case .some("b"): buffer += "\u{08}"; i += 1
                     case .some("f"): buffer += "\u{0C}"; i += 1
                     case .some("s"): buffer += " "; i += 1
+                    case .some("/") where version == 1: buffer += "/"; i += 1
                     case .some("u"):
                         switch char(i+2) {
                             case .some("{"):

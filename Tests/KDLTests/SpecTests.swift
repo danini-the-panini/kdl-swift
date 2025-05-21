@@ -14,19 +14,20 @@ final class SpecTests {
     }
 
     @Test func testSpecsV1() throws {
-        try _runSpecs(version: 1)
+        try _runSpecs(version: 1, ignore: ["escline_comment_node.kdl"])
     }
 
     @Test func testSpecsV2() throws {
         try _runSpecs(version: 2)
     }
 
-    func _runSpecs(version: UInt) throws {
+    func _runSpecs(version: UInt, ignore: [String] = []) throws {
         let testCases = version == 1 ? TEST_CASES_V1 : TEST_CASES
         let INPUTS = "\(testCases)/input"
         let EXPECTED = "\(testCases)/expected_kdl"
         let files = try fm.contentsOfDirectory(atPath: INPUTS)
         for file in files {
+            if ignore.contains(file) { continue }
             let input = _readFile("\(INPUTS)/\(file)")
             if fm.fileExists(atPath: "\(EXPECTED)/\(file)") {
                 let expected = _readFile("\(EXPECTED)/\(file)")

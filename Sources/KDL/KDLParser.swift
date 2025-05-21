@@ -14,19 +14,22 @@ public class KDLParser {
     var tokenizer: KDLTokenizer!
     var depth = 0
     var outputVersion: UInt
-    var parserVersion: UInt = 2
 
     public init(outputVersion: UInt? = nil) {
-        self.outputVersion = outputVersion ?? 1
+        self.outputVersion = outputVersion ?? 2
     }
 
     public func parse(
         _ string: String,
         parseTypes: Bool = true
     ) throws -> KDLDocument {
-        self.tokenizer = KDLTokenizer(string)
+        self.tokenizer = _createTokenizer(string)
         try _checkVersion()
         return try _document()
+    }
+
+    func _parserVersion() -> UInt {
+        return 2
     }
 
     func _createTokenizer(_ string: String) -> KDLTokenizer {
@@ -35,9 +38,13 @@ public class KDLParser {
 
     func _checkVersion() throws {
         switch try tokenizer.versionDirective() {
-        case .none, .some(parserVersion): return
+        case .none:
+            return
         case .some(let docVersion):
-            throw ParserError.versionMismatchError(parserVersion, docVersion)
+            if docVersion == _parserVersion() {
+                return
+            }
+            throw ParserError.versionMismatchError(_parserVersion(), docVersion)
         }
     }
 
@@ -45,7 +52,7 @@ public class KDLParser {
         let nodes = try _nodeList()
         try _linespaceStar()
         try _expectEndOfFile()
-        return KDLDocument(nodes)
+        return KDLDocument(nodes, version: outputVersion)
     }
 
     func _nodeList() throws -> [KDLNode] {
@@ -74,7 +81,7 @@ public class KDLParser {
         var type: String? = nil
         do {
             type = try _type()
-            node = KDLNode(try _identifier())
+            node = KDLNode(try _identifier(), version: outputVersion)
         } catch let e {
             if type != nil { throw e }
             return .False
@@ -151,7 +158,7 @@ public class KDLParser {
                         }
                     }
                     commented = false
-                case .NEWLINE, .EOF, .SEMICOLON:
+                case .NEWLINE, .EOF, .SEMICOLON, .NONE:
                     let _ = try tokenizer.nextToken()
                     return
                 case .LBRACE:
@@ -171,7 +178,7 @@ public class KDLParser {
                     }
                     commented = false
                 }
-            case .EOF, .SEMICOLON, .NEWLINE:
+            case .EOF, .SEMICOLON, .NEWLINE, .NONE:
                 let _ = try tokenizer.nextToken()
                 return
             case .LBRACE:
@@ -235,14 +242,14 @@ public class KDLParser {
     func _valueWithoutType(_ t: KDLToken) throws -> KDLValue {
         switch t {
         case .IDENT(let s), .STRING(let s), .RAWSTRING(let s):
-            return .string(s)
-        case .INTEGER(let i): return .int(i)
-        case .BIGINT(let i): return .bigint(i)
-        case .FLOAT(let f): return .float(f)
-        case .DECIMAL(let d): return .decimal(d)
-        case .TRUE: return .bool(true)
-        case .FALSE: return .bool(false)
-        case .NULL: return .null()
+            return .string(s, nil, outputVersion)
+        case .INTEGER(let i): return .int(i, nil, outputVersion)
+        case .BIGINT(let i): return .bigint(i, nil, outputVersion)
+        case .FLOAT(let f): return .float(f, nil, outputVersion)
+        case .DECIMAL(let d): return .decimal(d, nil, outputVersion)
+        case .TRUE: return .bool(true, nil, outputVersion)
+        case .FALSE: return .bool(false, nil, outputVersion)
+        case .NULL: return .null(nil, outputVersion)
         default:
             throw ParserError.expectedButGot("value", t)
         }
@@ -267,7 +274,7 @@ public class KDLParser {
         try _linespaceStar()
         let peek = try tokenizer.peekToken()
         switch peek {
-        case .RBRACE, .EOF, .SEMICOLON:
+        case .RBRACE, .EOF, .SEMICOLON, .NONE:
             throw ParserError.unexpectedToken(peek)
         default: ()
         }

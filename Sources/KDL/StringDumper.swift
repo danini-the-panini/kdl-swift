@@ -8,6 +8,10 @@ public class StringDumper {
     public func dump() -> String {
         if _isBareIdentifier() { return string }
 
+        return dumpRaw()
+    }
+
+    public func dumpRaw() -> String {
         return "\"\(string.map { _escape($0) }.joined(separator: ""))\""
     }
 
